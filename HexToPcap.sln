@@ -1,0 +1,34 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1c
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HexToPcap.Core", "src\HexToPcap.Core\HexToPcap.Core.csproj", "{5A9F4F34-6D4B-4B68-8A8F-0F1D2E4975D1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HexToPcap", "src\HexToPcap\HexToPcap.csproj", "{B1B4F40D-B1A5-4EA5-8E64-719C1331E8CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HexToPcap.Tests", "tests\HexToPcap.Tests\HexToPcap.Tests.csproj", "{F2DAD85F-4576-4FD7-A66A-8BC01C7E1159}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5A9F4F34-6D4B-4B68-8A8F-0F1D2E4975D1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5A9F4F34-6D4B-4B68-8A8F-0F1D2E4975D1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5A9F4F34-6D4B-4B68-8A8F-0F1D2E4975D1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5A9F4F34-6D4B-4B68-8A8F-0F1D2E4975D1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1B4F40D-B1A5-4EA5-8E64-719C1331E8CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1B4F40D-B1A5-4EA5-8E64-719C1331E8CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1B4F40D-B1A5-4EA5-8E64-719C1331E8CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1B4F40D-B1A5-4EA5-8E64-719C1331E8CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F2DAD85F-4576-4FD7-A66A-8BC01C7E1159}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F2DAD85F-4576-4FD7-A66A-8BC01C7E1159}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F2DAD85F-4576-4FD7-A66A-8BC01C7E1159}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F2DAD85F-4576-4FD7-A66A-8BC01C7E1159}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
+

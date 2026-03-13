@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{B1B4F40D-B1A5-4EA5-8E64-719C1331E8CF}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>HexToPcap</RootNamespace>
+    <AssemblyName>HexToPcap</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <Deterministic>true</Deterministic>
+    <LangVersion>5</LangVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>..\..\build\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(FrameworkPathOverride)' == '' and Exists('C:\Windows\Microsoft.NET\Framework\v4.0.30319')">
+    <FrameworkPathOverride>C:\Windows\Microsoft.NET\Framework\v4.0.30319</FrameworkPathOverride>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Xaml">
+      <HintPath>$(FrameworkPathOverride)\System.Xaml.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms">
+      <HintPath>$(FrameworkPathOverride)\System.Windows.Forms.dll</HintPath>
+    </Reference>
+    <Reference Include="WindowsBase">
+      <HintPath>$(FrameworkPathOverride)\WPF\WindowsBase.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationCore">
+      <HintPath>$(FrameworkPathOverride)\WPF\PresentationCore.dll</HintPath>
+    </Reference>
+    <Reference Include="PresentationFramework">
+      <HintPath>$(FrameworkPathOverride)\WPF\PresentationFramework.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <ApplicationDefinition Include="App.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </ApplicationDefinition>
+    <Page Include="MainWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Include="SettingsWindow.xaml">
+      <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
+    </Page>
+    <Compile Include="App.xaml.cs">
+      <DependentUpon>App.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="..\HexToPcap.Core\Interfaces\IInputParser.cs">
+      <Link>Core\Interfaces\IInputParser.cs</Link>
+    </Compile>
+    <Compile Include="..\HexToPcap.Core\Interfaces\IPcapWriter.cs">
+      <Link>Core\Interfaces\IPcapWriter.cs</Link>
+    </Compile>
+    <Compile Include="..\HexToPcap.Core\Models\AppSettings.cs">
+      <Link>Core\Models\AppSettings.cs</Link>
+    </Compile>
+    <Compile Include="..\HexToPcap.Core\Models\PacketParseError.cs">
+      <Link>Core\Models\PacketParseError.cs</Link>
+    </Compile>
+    <Compile Include="..\HexToPcap.Core\Models\ParseResult.cs">
+      <Link>Core\Models\ParseResult.cs</Link>
+    </Compile>
+    <Compile Include="..\HexToPcap.Core\Services\HexInputParser.cs">
+      <Link>Core\Services\HexInputParser.cs</Link>
+    </Compile>
+    <Compile Include="..\HexToPcap.Core\Services\PcapWriter.cs">
+      <Link>Core\Services\PcapWriter.cs</Link>
+    </Compile>
+    <Compile Include="MainWindow.xaml.cs">
+      <DependentUpon>MainWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Models\ConversionOutcome.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\ISettingsService.cs" />
+    <Compile Include="Services\IWiresharkLocator.cs" />
+    <Compile Include="Services\SettingsService.cs" />
+    <Compile Include="Services\UserSettingsStore.cs" />
+    <Compile Include="Services\WiresharkLocator.cs" />
+    <Compile Include="SettingsWindow.xaml.cs">
+      <DependentUpon>SettingsWindow.xaml</DependentUpon>
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="ViewModels\MainWindowViewModel.cs" />
+    <Compile Include="ViewModels\RelayCommand.cs" />
+    <Compile Include="ViewModels\ViewModelBase.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+</Project>

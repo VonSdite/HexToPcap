@@ -1,0 +1,99 @@
+<Window x:Class="HexToPcap.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="设置"
+        Width="720"
+        Height="260"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="#EAF5EC">
+    <Grid Margin="18">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="配置管理"
+                   FontSize="24"
+                   FontWeight="Bold"
+                   Foreground="#1F3327" />
+
+        <Grid Grid.Row="1" Margin="0,18,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="120" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="92" />
+            </Grid.ColumnDefinitions>
+
+            <TextBlock VerticalAlignment="Center"
+                       Text="PCAP 目录"
+                       Foreground="#355342" />
+            <TextBox x:Name="OutputDirectoryTextBox"
+                     Grid.Column="1"
+                     Height="30"
+                     Margin="0,0,10,0"
+                     Background="#FCFEFC"
+                     BorderBrush="#B7CCBC" />
+            <Button Grid.Column="2"
+                    Height="30"
+                    Content="浏览..."
+                    Background="#E5F2E7"
+                    BorderBrush="#B7CCBC"
+                    Foreground="#284233"
+                    Click="OnBrowseOutputDirectoryClick" />
+
+            <TextBlock Grid.Row="1"
+                       VerticalAlignment="Center"
+                       Margin="0,14,0,0"
+                       Text="Wireshark"
+                       Foreground="#355342" />
+            <TextBox x:Name="WiresharkPathTextBox"
+                     Grid.Row="1"
+                     Grid.Column="1"
+                     Height="30"
+                     Margin="0,14,10,0"
+                     Background="#FCFEFC"
+                     BorderBrush="#B7CCBC" />
+            <Button Grid.Row="1"
+                    Grid.Column="2"
+                    Height="30"
+                    Margin="0,14,0,0"
+                    Content="浏览..."
+                    Background="#E5F2E7"
+                    BorderBrush="#B7CCBC"
+                    Foreground="#284233"
+                    Click="OnBrowseWiresharkClick" />
+        </Grid>
+
+        <TextBlock Grid.Row="2"
+                   Margin="0,12,0,0"
+                   Foreground="#557062"
+                   Text="Wireshark 路径可以留空。留空时程序会尝试从系统 .pcap 关联中检测 Wireshark。" />
+
+        <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Width="96"
+                    Height="32"
+                    Margin="0,0,10,0"
+                    Content="取消"
+                    Background="#E5F2E7"
+                    BorderBrush="#B7CCBC"
+                    Foreground="#284233"
+                    Click="OnCancelClick" />
+            <Button Width="96"
+                    Height="32"
+                    Content="保存"
+                    Background="#2E6B4F"
+                    BorderBrush="#2E6B4F"
+                    Foreground="White"
+                    Click="OnSaveClick" />
+        </StackPanel>
+    </Grid>
+</Window>
