@@ -12,19 +12,23 @@
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
     <LangVersion>5</LangVersion>
+    <BaseIntermediateOutputPath>..\..\build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
+    <OutputPath>..\..\build\lib\Debug\</OutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)Debug\</IntermediateOutputPath>
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DebugType>pdbonly</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+    <DebugType>none</DebugType>
     <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
+    <OutputPath>..\..\build\lib\Release\</OutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)Release\</IntermediateOutputPath>
     <DefineConstants>TRACE</DefineConstants>
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
