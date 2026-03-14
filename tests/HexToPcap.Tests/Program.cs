@@ -30,6 +30,8 @@ namespace HexToPcap.Tests
                 new KeyValuePair<string, Action>("ParsesSingleTcpdumpPacket", ParsesSingleTcpdumpPacket),
                 new KeyValuePair<string, Action>("ParsesMultipleTcpdumpPacketsWithOffsetReset", ParsesMultipleTcpdumpPacketsWithOffsetReset),
                 new KeyValuePair<string, Action>("IgnoresTcpdumpAsciiAndOffsetPrefixBytes", IgnoresTcpdumpAsciiAndOffsetPrefixBytes),
+                new KeyValuePair<string, Action>("IgnoresTcpdumpDescriptionLinesEvenWhenTheyContainHexLookingTokens", IgnoresTcpdumpDescriptionLinesEvenWhenTheyContainHexLookingTokens),
+                new KeyValuePair<string, Action>("DoesNotParseHexLookingTcpdumpAsciiPreview", DoesNotParseHexLookingTcpdumpAsciiPreview),
                 new KeyValuePair<string, Action>("KeepsTcpdumpPacketsWhenOffsetsJump", KeepsTcpdumpPacketsWhenOffsetsJump),
                 new KeyValuePair<string, Action>("WritesClassicPcapHeader", WritesClassicPcapHeader)
             };
@@ -207,6 +209,32 @@ namespace HexToPcap.Tests
 
             AssertCounts(result, 1);
             AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Tcpdump ASCII preview should be ignored.");
+        }
+
+        private static void IgnoresTcpdumpDescriptionLinesEvenWhenTheyContainHexLookingTokens()
+        {
+            var parser = new HexInputParser();
+            var expected = new byte[] { 0x00, 0x11, 0x22, 0x33 };
+            var input =
+                "12:00:00.000000 IP sample > sample: length 32" + Environment.NewLine +
+                "        0x0000:  0011 2233  ..\"3";
+            var result = parser.Parse(input);
+
+            AssertCounts(result, 1);
+            AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Tcpdump description lines should be ignored completely.");
+        }
+
+        private static void DoesNotParseHexLookingTcpdumpAsciiPreview()
+        {
+            var parser = new HexInputParser();
+            var expected = Encoding.ASCII.GetBytes("0123456789abcdef");
+            var input =
+                "12:00:00.000000 IP sample > sample: payload" + Environment.NewLine +
+                "        0x0000:  3031 3233 3435 3637 3839 6162 6364 6566  0123456789abcdef";
+            var result = parser.Parse(input);
+
+            AssertCounts(result, 1);
+            AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Tcpdump ASCII preview that looks like hex should not be parsed as packet bytes.");
         }
 
         private static void KeepsTcpdumpPacketsWhenOffsetsJump()

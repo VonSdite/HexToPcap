@@ -12,6 +12,9 @@ namespace HexToPcap.Core.Services
         private static readonly Regex LeadingTokenWithColonRegex = new Regex(
             @"^\s*(?<token>\S+:)\s*(?<rest>.*)$",
             RegexOptions.Compiled);
+        private static readonly Regex TcpdumpOffsetLineRegex = new Regex(
+            @"^\s*0x(?<offset>[0-9A-Fa-f]+):(?<rest>.*)$",
+            RegexOptions.Compiled);
 
         public ParseResult Parse(string input)
         {
@@ -97,9 +100,15 @@ namespace HexToPcap.Core.Services
                 return new ParsedLine(new byte[0]);
             }
 
+            var tcpdumpMatch = TcpdumpOffsetLineRegex.Match(line);
+            if (tcpdumpMatch.Success)
+            {
+                return new ParsedLine(ExtractBytesFromTcpdumpRegion(tcpdumpMatch.Groups["rest"].Value));
+            }
+
             var remaining = StripLeadingTokenWithColon(line);
             var tokens = remaining.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            return new ParsedLine(ExtractBytesFromTokens(tokens));
+            return new ParsedLine(ExtractBytesFromPlainTokens(tokens));
         }
 
         private static string StripLeadingTokenWithColon(string line)
@@ -108,26 +117,89 @@ namespace HexToPcap.Core.Services
             return match.Success ? match.Groups["rest"].Value : line;
         }
 
-        private static byte[] ExtractBytesFromTokens(string[] tokens)
+        private static byte[] ExtractBytesFromPlainTokens(string[] tokens)
         {
             var bytes = new List<byte>();
-            var hasParsedHex = false;
 
             for (var index = 0; index < tokens.Length; index++)
             {
                 var normalizedToken = NormalizeHexToken(tokens[index]);
                 if (normalizedToken == null)
                 {
-                    if (hasParsedHex)
+                    if (index == 0 || bytes.Count == 0)
+                    {
+                        return new byte[0];
+                    }
+
+                    if (bytes.Count > 0)
                     {
                         break;
                     }
-
-                    continue;
                 }
 
-                hasParsedHex = true;
                 AppendHexBytes(normalizedToken, bytes);
+            }
+
+            return bytes.ToArray();
+        }
+
+        private static byte[] ExtractBytesFromTcpdumpRegion(string value)
+        {
+            var bytes = new List<byte>();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return bytes.ToArray();
+            }
+
+            var index = 0;
+            while (index < value.Length && char.IsWhiteSpace(value[index]))
+            {
+                index++;
+            }
+
+            while (index < value.Length)
+            {
+                var tokenStart = index;
+                while (index < value.Length && IsHexDigit(value[index]))
+                {
+                    index++;
+                }
+
+                var tokenLength = index - tokenStart;
+                if (tokenLength == 0 || tokenLength > 4)
+                {
+                    break;
+                }
+
+                var normalizedToken = NormalizeHexToken(value.Substring(tokenStart, tokenLength));
+                if (normalizedToken == null)
+                {
+                    break;
+                }
+
+                AppendHexBytes(normalizedToken, bytes);
+
+                if (index >= value.Length)
+                {
+                    break;
+                }
+
+                var whitespaceCount = 0;
+                while (index < value.Length && char.IsWhiteSpace(value[index]))
+                {
+                    whitespaceCount++;
+                    index++;
+                }
+
+                if (index >= value.Length || whitespaceCount == 0)
+                {
+                    break;
+                }
+
+                if (whitespaceCount > 1)
+                {
+                    break;
+                }
             }
 
             return bytes.ToArray();
