@@ -4,32 +4,33 @@
         Title="设置"
         Icon="Assets/HexToPcap.ico"
         Width="720"
-        Height="310"
+        Height="300"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
-        Background="#F6F8F5"
+        Background="#FFFFFF"
         SnapsToDevicePixels="True">
     <Window.Resources>
-        <SolidColorBrush x:Key="CardBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="CardBorderBrush" Color="#D9E3DC" />
-        <SolidColorBrush x:Key="InputBrush" Color="#FBFCFB" />
+        <SolidColorBrush x:Key="PanelBrush" Color="#FBFCFB" />
+        <SolidColorBrush x:Key="HeaderBrush" Color="#F5F8F6" />
+        <SolidColorBrush x:Key="TextBrush" Color="#1F2C24" />
+        <SolidColorBrush x:Key="MutedTextBrush" Color="#67746D" />
+        <SolidColorBrush x:Key="LineBrush" Color="#E3E9E5" />
         <SolidColorBrush x:Key="AccentBrush" Color="#2F6A4F" />
         <SolidColorBrush x:Key="AccentHoverBrush" Color="#265640" />
-        <SolidColorBrush x:Key="AccentSoftBrush" Color="#F1F6F2" />
-        <SolidColorBrush x:Key="TextBrush" Color="#1E2E24" />
-        <SolidColorBrush x:Key="MutedTextBrush" Color="#6A786F" />
+        <SolidColorBrush x:Key="AccentSoftBrush" Color="#EEF4F0" />
 
         <Style x:Key="FieldLabelStyle" TargetType="TextBlock">
             <Setter Property="VerticalAlignment" Value="Center" />
             <Setter Property="Foreground" Value="{StaticResource MutedTextBrush}" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="FontSize" Value="12" />
         </Style>
 
         <Style x:Key="InputTextBoxStyle" TargetType="TextBox">
             <Setter Property="Height" Value="34" />
             <Setter Property="Padding" Value="10,6" />
-            <Setter Property="Background" Value="{StaticResource InputBrush}" />
-            <Setter Property="BorderBrush" Value="#CBD6CE" />
+            <Setter Property="Background" Value="{StaticResource PanelBrush}" />
+            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
         </Style>
@@ -49,7 +50,7 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="10"
+                                CornerRadius="4"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
@@ -69,7 +70,7 @@
             <Setter Property="Height" Value="34" />
             <Setter Property="Padding" Value="18,0" />
             <Setter Property="Background" Value="{StaticResource AccentSoftBrush}" />
-            <Setter Property="BorderBrush" Value="#CBD8D0" />
+            <Setter Property="BorderBrush" Value="#D2DDD5" />
             <Setter Property="Foreground" Value="{StaticResource TextBrush}" />
             <Setter Property="FontWeight" Value="SemiBold" />
             <Setter Property="FocusVisualStyle" Value="{x:Null}" />
@@ -80,14 +81,14 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="1"
-                                CornerRadius="10"
+                                CornerRadius="4"
                                 Padding="{TemplateBinding Padding}">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#E7EFEA" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#E5EEE8" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -96,90 +97,87 @@
         </Style>
     </Window.Resources>
 
-    <Grid Margin="22">
-        <Border Background="{StaticResource CardBrush}"
-                BorderBrush="{StaticResource CardBorderBrush}"
-                BorderThickness="1"
-                CornerRadius="16"
-                Padding="22">
+    <Grid Margin="16,14,16,14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="设置"
+                   FontSize="17"
+                   FontWeight="SemiBold"
+                   Foreground="{StaticResource TextBrush}" />
+
+        <Border Grid.Row="1"
+                Margin="0,14,0,0"
+                BorderBrush="{StaticResource LineBrush}"
+                BorderThickness="0,1,0,0"
+                Padding="0,14,0,0">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="120" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="96" />
+                </Grid.ColumnDefinitions>
 
-                <TextBlock Text="设置"
-                           FontSize="18"
-                           FontWeight="SemiBold"
-                           Foreground="{StaticResource TextBrush}" />
+                <TextBlock Style="{StaticResource FieldLabelStyle}" Text="PCAP 目录" />
+                <TextBox x:Name="OutputDirectoryTextBox"
+                         Grid.Column="1"
+                         Margin="0,0,10,0"
+                         Style="{StaticResource InputTextBoxStyle}" />
+                <Button Grid.Column="2"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="浏览..."
+                        Click="OnBrowseOutputDirectoryClick" />
 
-                <Grid Grid.Row="1" Margin="0,18,0,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                    </Grid.RowDefinitions>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="120" />
-                        <ColumnDefinition Width="*" />
-                        <ColumnDefinition Width="96" />
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Style="{StaticResource FieldLabelStyle}" Text="PCAP 目录" />
-                    <TextBox x:Name="OutputDirectoryTextBox"
-                             Grid.Column="1"
-                             Margin="0,0,10,0"
-                             Style="{StaticResource InputTextBoxStyle}" />
-                    <Button Grid.Column="2"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Content="浏览..."
-                            Click="OnBrowseOutputDirectoryClick" />
-
-                    <TextBlock Grid.Row="1"
-                               Margin="0,14,0,0"
-                               Style="{StaticResource FieldLabelStyle}"
-                               Text="Wireshark" />
-                    <TextBox x:Name="WiresharkPathTextBox"
-                             Grid.Row="1"
-                             Grid.Column="1"
-                             Margin="0,14,10,0"
-                             Style="{StaticResource InputTextBoxStyle}" />
-                    <Button Grid.Row="1"
-                            Grid.Column="2"
-                            Margin="0,14,0,0"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Content="浏览..."
-                            Click="OnBrowseWiresharkClick" />
-                </Grid>
-
-                <Border Grid.Row="2"
-                        Margin="0,18,0,0"
-                        Background="{StaticResource AccentSoftBrush}"
-                        BorderBrush="#D7E2DA"
-                        BorderThickness="1"
-                        CornerRadius="10"
-                        Padding="12,10">
-                    <TextBlock Foreground="{StaticResource MutedTextBrush}"
-                               Text="Wireshark 路径可以留空。留空时程序会尝试从系统 .pcap 关联中检测 Wireshark。" />
-                </Border>
-
-                <StackPanel Grid.Row="4"
-                            Margin="0,20,0,0"
-                            Orientation="Horizontal"
-                            HorizontalAlignment="Right">
-                    <Button Width="96"
-                            Margin="0,0,10,0"
-                            Style="{StaticResource SecondaryButtonStyle}"
-                            Content="取消"
-                            Click="OnCancelClick" />
-                    <Button Width="96"
-                            Style="{StaticResource PrimaryButtonStyle}"
-                            Content="保存"
-                            Click="OnSaveClick" />
-                </StackPanel>
+                <TextBlock Grid.Row="1"
+                           Margin="0,14,0,0"
+                           Style="{StaticResource FieldLabelStyle}"
+                           Text="Wireshark" />
+                <TextBox x:Name="WiresharkPathTextBox"
+                         Grid.Row="1"
+                         Grid.Column="1"
+                         Margin="0,14,10,0"
+                         Style="{StaticResource InputTextBoxStyle}" />
+                <Button Grid.Row="1"
+                        Grid.Column="2"
+                        Margin="0,14,0,0"
+                        Style="{StaticResource SecondaryButtonStyle}"
+                        Content="浏览..."
+                        Click="OnBrowseWiresharkClick" />
             </Grid>
         </Border>
+
+        <Border Grid.Row="2"
+                Margin="0,16,0,0"
+                Background="{StaticResource HeaderBrush}"
+                BorderBrush="{StaticResource LineBrush}"
+                BorderThickness="1"
+                Padding="12,10">
+            <TextBlock Foreground="{StaticResource MutedTextBrush}"
+                       Text="Wireshark 路径可以留空。留空时程序会尝试从系统 .pcap 关联中检测 Wireshark。" />
+        </Border>
+
+        <StackPanel Grid.Row="4"
+                    Margin="0,20,0,0"
+                    Orientation="Horizontal"
+                    HorizontalAlignment="Right">
+            <Button Width="96"
+                    Margin="0,0,10,0"
+                    Style="{StaticResource SecondaryButtonStyle}"
+                    Content="取消"
+                    Click="OnCancelClick" />
+            <Button Width="96"
+                    Style="{StaticResource PrimaryButtonStyle}"
+                    Content="保存"
+                    Click="OnSaveClick" />
+        </StackPanel>
     </Grid>
 </Window>
