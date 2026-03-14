@@ -43,7 +43,6 @@
     <Compile Include="Interfaces\IInputParser.cs" />
     <Compile Include="Interfaces\IPcapWriter.cs" />
     <Compile Include="Models\AppSettings.cs" />
-    <Compile Include="Models\PacketParseError.cs" />
     <Compile Include="Models\ParseResult.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\HexInputParser.cs" />

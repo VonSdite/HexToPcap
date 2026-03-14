@@ -85,9 +85,6 @@
     <Compile Include="..\HexToPcap.Core\Models\AppSettings.cs">
       <Link>Core\Models\AppSettings.cs</Link>
     </Compile>
-    <Compile Include="..\HexToPcap.Core\Models\PacketParseError.cs">
-      <Link>Core\Models\PacketParseError.cs</Link>
-    </Compile>
     <Compile Include="..\HexToPcap.Core\Models\ParseResult.cs">
       <Link>Core\Models\ParseResult.cs</Link>
     </Compile>

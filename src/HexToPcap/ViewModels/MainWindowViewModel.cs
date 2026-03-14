@@ -1,8 +1,6 @@
 using System;
-using System.Collections.ObjectModel;
 using System.IO;
 using HexToPcap.Core.Interfaces;
-using HexToPcap.Core.Models;
 using HexToPcap.Models;
 using HexToPcap.Services;
 
@@ -29,12 +27,9 @@ namespace HexToPcap.ViewModels
             _pcapWriter = pcapWriter;
             _settingsService = settingsService;
             _wiresharkLocator = wiresharkLocator;
-            Errors = new ObservableCollection<PacketParseError>();
             ReloadSettings();
             SummaryText = "\u5C31\u7EEA";
         }
-
-        public ObservableCollection<PacketParseError> Errors { get; private set; }
 
         public string InputText
         {
@@ -104,7 +99,6 @@ namespace HexToPcap.ViewModels
 
         public ConversionOutcome Convert()
         {
-            Errors.Clear();
             LastOutputPath = null;
 
             var settings = _settingsService.Load();
@@ -118,7 +112,7 @@ namespace HexToPcap.ViewModels
 
                 return new ConversionOutcome
                 {
-                    FailedPacketCount = 0
+                    SuccessfulPacketCount = 0
                 };
             }
 
@@ -133,8 +127,7 @@ namespace HexToPcap.ViewModels
             {
                 OutputPath = outputPath,
                 WiresharkPath = _wiresharkLocator.ResolveLaunchPath(settings.WiresharkPath),
-                SuccessfulPacketCount = parseResult.SuccessfulPackets.Count,
-                FailedPacketCount = 0
+                SuccessfulPacketCount = parseResult.SuccessfulPackets.Count
             };
         }
 

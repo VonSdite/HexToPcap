@@ -23,11 +23,12 @@ namespace HexToPcap
             const string helpText =
                 "HexToPcap 用于把十六进制文本转换成标准 pcap 文件。\n\n" +
                 "支持的输入格式：\n" +
-                "1. 普通十六进制文本，支持空格分隔、跨多行粘贴。\n" +
-                "2. tcpdump -vv -nn -XX 输出，程序会自动提取偏移后的十六进制内容。\n\n" +
-                "自动拆包规则：\n" +
+                "1. 普通十六进制文本，支持空格分隔、跨多行粘贴，也支持 0x 前缀。\n" +
+                "2. tcpdump -vv -nn -XX 输出，程序会自动忽略 0x0000: 这类偏移前缀并提取后面的十六进制内容。\n\n" +
+                "拆包规则：\n" +
                 "- 空行会作为报文分隔。\n" +
-                "- 没有空行时，会按 Ethernet、IPv4、IPv6、ARP 以及多层 VLAN/QinQ 结构自动判断报文边界。\n\n" +
+                "- 没有空行时，只在新的一行起始处识别到常见 Ethernet 头时开始一个新报文。\n" +
+                "- 奇数个十六进制字符会自动在末尾补 0。\n\n" +
                 "其他说明：\n" +
                 "- 保存位置可在主界面顶部直接点击“设置”修改。\n" +
                 "- 输出文件名格式：yyyyMMddHHmmss-报文个数.pcap。";
@@ -68,9 +69,8 @@ namespace HexToPcap
                     var askOpen = MessageBox.Show(
                         this,
                         string.Format(
-                            "已生成 {0} 个报文，失败 {1} 个。\n是否使用 Wireshark 打开生成的 pcap 文件？",
-                            outcome.SuccessfulPacketCount,
-                            outcome.FailedPacketCount),
+                            "已生成 {0} 个报文。\n是否使用 Wireshark 打开生成的 pcap 文件？",
+                            outcome.SuccessfulPacketCount),
                         "HexToPcap",
                         MessageBoxButton.YesNo,
                         MessageBoxImage.Question);

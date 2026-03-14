@@ -17,6 +17,7 @@ namespace HexToPcap.Tests
             var failures = new List<string>();
             var tests = new[]
             {
+                new KeyValuePair<string, Action>("ConstructsParseResultWithoutErrorsCollection", ConstructsParseResultWithoutErrorsCollection),
                 new KeyValuePair<string, Action>("ParsesSingleIpv4Frame", ParsesSingleIpv4Frame),
                 new KeyValuePair<string, Action>("ParsesMultiLineIpv4Frame", ParsesMultiLineIpv4Frame),
                 new KeyValuePair<string, Action>("ParsesBlankSeparatedFrames", ParsesBlankSeparatedFrames),
@@ -62,13 +63,22 @@ namespace HexToPcap.Tests
             return 1;
         }
 
+        private static void ConstructsParseResultWithoutErrorsCollection()
+        {
+            var packet = new byte[] { 0x00, 0x11 };
+            var result = new ParseResult(new List<byte[]> { packet });
+
+            AssertEqual(1, result.SuccessfulPackets.Count, "ParseResult should expose packet collection without an errors list.");
+            AssertSequenceEqual(packet, result.SuccessfulPackets[0], "ParseResult packet bytes do not match.");
+        }
+
         private static void ParsesSingleIpv4Frame()
         {
             var parser = new HexInputParser();
             var frame = BuildIpv4Frame(0x01, new byte[] { 0xDE, 0xAD, 0xBE, 0xEF });
             var result = parser.Parse(ToPlainHexLines(frame, frame.Length));
 
-            AssertCounts(result, 1, 0);
+            AssertCounts(result, 1);
             AssertSequenceEqual(frame, result.SuccessfulPackets[0], "Single IPv4 frame bytes do not match.");
         }
 
@@ -78,7 +88,7 @@ namespace HexToPcap.Tests
             var frame = BuildIpv4Frame(0x02, Enumerable.Range(1, 12).Select(value => (byte)value).ToArray());
             var result = parser.Parse(ToPlainHexLines(frame, 8));
 
-            AssertCounts(result, 1, 0);
+            AssertCounts(result, 1);
             AssertSequenceEqual(frame, result.SuccessfulPackets[0], "Multi-line IPv4 frame bytes do not match.");
         }
 
@@ -90,7 +100,7 @@ namespace HexToPcap.Tests
             var input = ToPlainHexLines(frame1, 10) + Environment.NewLine + Environment.NewLine + ToPlainHexLines(frame2, 10);
             var result = parser.Parse(input);
 
-            AssertCounts(result, 2, 0);
+            AssertCounts(result, 2);
             AssertSequenceEqual(frame1, result.SuccessfulPackets[0], "First blank-separated frame bytes do not match.");
             AssertSequenceEqual(frame2, result.SuccessfulPackets[1], "Second blank-separated frame bytes do not match.");
         }
@@ -103,7 +113,7 @@ namespace HexToPcap.Tests
             var input = ToPlainHexLines(fragment, fragment.Length) + Environment.NewLine + ToPlainHexLines(frame, frame.Length);
             var result = parser.Parse(input);
 
-            AssertCounts(result, 2, 0);
+            AssertCounts(result, 2);
             AssertSequenceEqual(fragment, result.SuccessfulPackets[0], "Leading fragment should be exported as the first packet.");
             AssertSequenceEqual(frame, result.SuccessfulPackets[1], "Recognized Ethernet frame should start a new packet.");
         }
@@ -114,7 +124,7 @@ namespace HexToPcap.Tests
             var expected = new byte[] { 0x00, 0x11, 0x22, 0x33 };
             var result = parser.Parse("0x0000: 00 11 22 33");
 
-            AssertCounts(result, 1, 0);
+            AssertCounts(result, 1);
             AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Offset prefix should not become packet bytes.");
         }
 
@@ -124,7 +134,7 @@ namespace HexToPcap.Tests
             var expected = new byte[] { 0xA0, 0xBB, 0x12, 0x30 };
             var result = parser.Parse("A BB 123");
 
-            AssertCounts(result, 1, 0);
+            AssertCounts(result, 1);
             AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Odd-length tokens should be padded with trailing zeroes.");
         }
 
@@ -134,7 +144,7 @@ namespace HexToPcap.Tests
             var truncated = BuildIpv4Frame(0x06, new byte[] { 0x20, 0x21, 0x22, 0x23 }).Take(18).ToArray();
             var result = parser.Parse(ToPlainHexLines(truncated, truncated.Length));
 
-            AssertCounts(result, 1, 0);
+            AssertCounts(result, 1);
             AssertSequenceEqual(truncated, result.SuccessfulPackets[0], "Incomplete packet should still be exported.");
         }
 
@@ -144,7 +154,7 @@ namespace HexToPcap.Tests
             var frame = BuildIpv4Frame(0x41, Encoding.ASCII.GetBytes("abcdef"));
             var result = parser.Parse(ToTcpdumpHex(frame));
 
-            AssertCounts(result, 1, 0);
+            AssertCounts(result, 1);
             AssertSequenceEqual(frame, result.SuccessfulPackets[0], "Tcpdump packet bytes do not match.");
         }
 
@@ -156,7 +166,7 @@ namespace HexToPcap.Tests
             var input = ToTcpdumpHex(frame1) + ToTcpdumpHex(frame2);
             var result = parser.Parse(input);
 
-            AssertCounts(result, 2, 0);
+            AssertCounts(result, 2);
             AssertSequenceEqual(frame1, result.SuccessfulPackets[0], "First tcpdump packet bytes do not match.");
             AssertSequenceEqual(frame2, result.SuccessfulPackets[1], "Second tcpdump packet bytes do not match.");
         }
@@ -170,7 +180,7 @@ namespace HexToPcap.Tests
                 "        0x0000:  0011 2233  ..\"3";
             var result = parser.Parse(input);
 
-            AssertCounts(result, 1, 0);
+            AssertCounts(result, 1);
             AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Tcpdump ASCII preview should be ignored.");
         }
 
@@ -183,7 +193,7 @@ namespace HexToPcap.Tests
                 "        0x0010:  0011 2233  ..\"3";
             var result = parser.Parse(input);
 
-            AssertCounts(result, 1, 0);
+            AssertCounts(result, 1);
             AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Tcpdump offsets should not be validated before export.");
         }
 
@@ -224,10 +234,9 @@ namespace HexToPcap.Tests
             }
         }
 
-        private static void AssertCounts(ParseResult result, int successCount, int errorCount)
+        private static void AssertCounts(ParseResult result, int successCount)
         {
             AssertEqual(successCount, result.SuccessfulPackets.Count, "Unexpected successful packet count.");
-            AssertEqual(errorCount, result.Errors.Count, "Unexpected parse error count.");
         }
 
         private static void AssertSequenceEqual(byte[] expected, byte[] actual, string message)

@@ -7,8 +7,5 @@ namespace HexToPcap.Models
         public string WiresharkPath { get; set; }
 
         public int SuccessfulPacketCount { get; set; }
-
-        public int FailedPacketCount { get; set; }
     }
 }
-

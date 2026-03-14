@@ -20,11 +20,10 @@ namespace HexToPcap.Core.Services
         public ParseResult Parse(string input)
         {
             var packets = new List<byte[]>();
-            var errors = new List<PacketParseError>();
 
             if (string.IsNullOrWhiteSpace(input))
             {
-                return new ParseResult(packets, errors);
+                return new ParseResult(packets);
             }
 
             var blocks = SplitIntoBlocks(input);
@@ -41,7 +40,7 @@ namespace HexToPcap.Core.Services
                 }
             }
 
-            return new ParseResult(packets, errors);
+            return new ParseResult(packets);
         }
 
         private static List<TextBlock> SplitIntoBlocks(string input)
