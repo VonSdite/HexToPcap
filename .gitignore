@@ -2,6 +2,7 @@ bin/
 obj/
 .vs/
 build/
+.worktrees/
 dist/
 *.user
 *.suo
