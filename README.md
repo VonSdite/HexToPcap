@@ -1,6 +1,6 @@
 # HexToPcap
 
-`HexToPcap` 是一个 Windows 桌面工具，用来把![alt text](image.png)十六进制报文文本转换成可被 Wireshark 打开的 `.pcap` 文件。
+`HexToPcap` 是一个 Windows 桌面工具，用来把十六进制报文文本转换成可被 Wireshark 打开的 `.pcap` 文件。
 
 项目使用 `WPF + .NET Framework 4.8`，当前输出格式固定为经典 `pcap`，链路层固定为 `Ethernet (DLT_EN10MB)`，不输出 `pcapng`。
 
