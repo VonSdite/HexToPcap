@@ -33,7 +33,8 @@ namespace HexToPcap.Tests
                 new KeyValuePair<string, Action>("IgnoresTcpdumpDescriptionLinesEvenWhenTheyContainHexLookingTokens", IgnoresTcpdumpDescriptionLinesEvenWhenTheyContainHexLookingTokens),
                 new KeyValuePair<string, Action>("DoesNotParseHexLookingTcpdumpAsciiPreview", DoesNotParseHexLookingTcpdumpAsciiPreview),
                 new KeyValuePair<string, Action>("KeepsTcpdumpPacketsWhenOffsetsJump", KeepsTcpdumpPacketsWhenOffsetsJump),
-                new KeyValuePair<string, Action>("WritesClassicPcapHeader", WritesClassicPcapHeader)
+                new KeyValuePair<string, Action>("WritesClassicPcapHeader", WritesClassicPcapHeader),
+                new KeyValuePair<string, Action>("ApplicationIconContainsTaskbarSizes", ApplicationIconContainsTaskbarSizes)
             };
 
             for (var index = 0; index < tests.Length; index++)
@@ -287,6 +288,49 @@ namespace HexToPcap.Tests
             }
         }
 
+        private static void ApplicationIconContainsTaskbarSizes()
+        {
+            var iconPath = Path.GetFullPath(
+                Path.Combine(
+                    AppDomain.CurrentDomain.BaseDirectory,
+                    "..",
+                    "..",
+                    "..",
+                    "src",
+                    "HexToPcap",
+                    "Assets",
+                    "HexToPcap.ico"));
+
+            if (!File.Exists(iconPath))
+            {
+                throw new InvalidOperationException("Application icon file was not found: " + iconPath);
+            }
+
+            var bytes = File.ReadAllBytes(iconPath);
+            if (bytes.Length < 6)
+            {
+                throw new InvalidOperationException("Application icon is invalid or empty.");
+            }
+
+            var imageCount = BitConverter.ToUInt16(bytes, 4);
+            var sizes = new List<int>();
+            for (var index = 0; index < imageCount; index++)
+            {
+                var entryOffset = 6 + index * 16;
+                if (bytes.Length < entryOffset + 16)
+                {
+                    throw new InvalidOperationException("Application icon directory entry is incomplete.");
+                }
+
+                var width = bytes[entryOffset] == 0 ? 256 : bytes[entryOffset];
+                sizes.Add(width);
+            }
+
+            AssertContains(16, sizes, "Application icon should include 16x16 for taskbar rendering.");
+            AssertContains(32, sizes, "Application icon should include 32x32 for taskbar rendering.");
+            AssertContains(48, sizes, "Application icon should include 48x48 for taskbar rendering.");
+        }
+
         private static void AssertCounts(ParseResult result, int successCount)
         {
             AssertEqual(successCount, result.SuccessfulPackets.Count, "Unexpected successful packet count.");
@@ -313,6 +357,14 @@ namespace HexToPcap.Tests
             if (!Equals(expected, actual))
             {
                 throw new InvalidOperationException(message + " Expected=" + expected + " Actual=" + actual);
+            }
+        }
+
+        private static void AssertContains<T>(T expected, IList<T> values, string message)
+        {
+            if (!values.Contains(expected))
+            {
+                throw new InvalidOperationException(message + " Sizes=" + string.Join(",", values.Select(value => value.ToString())));
             }
         }
 
