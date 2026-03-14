@@ -21,14 +21,16 @@ namespace HexToPcap
         private void OnHelpClick(object sender, RoutedEventArgs e)
         {
             const string helpText =
-                "HexToPcap 用于把十六进制文本转换成 pcap 文件。\n\n" +
+                "HexToPcap 用于把十六进制文本转换成标准 pcap 文件。\n\n" +
                 "支持的输入格式：\n" +
-                "1. 普通十六进制文本，可按空格分隔，支持一个报文跨多行。\n" +
-                "2. tcpdump -vv -nn -XX 输出，程序会自动提取偏移地址后的十六进制内容。\n\n" +
-                "分包规则：\n" +
+                "1. 普通十六进制文本，支持空格分隔、跨多行粘贴。\n" +
+                "2. tcpdump -vv -nn -XX 输出，程序会自动提取偏移后的十六进制内容。\n\n" +
+                "自动拆包规则：\n" +
                 "- 空行会作为报文分隔。\n" +
-                "- 没有空行时，会按 Ethernet、IP、ARP 等长度字段尝试自动判断报文边界。\n\n" +
-                "输出文件名格式：yyyyMMddHHmmss-报文个数.pcap。";
+                "- 没有空行时，会按 Ethernet、IPv4、IPv6、ARP 以及多层 VLAN/QinQ 结构自动判断报文边界。\n\n" +
+                "其他说明：\n" +
+                "- 保存位置可在主界面顶部直接点击“设置”修改。\n" +
+                "- 输出文件名格式：yyyyMMddHHmmss-报文个数.pcap。";
 
             MessageBox.Show(
                 this,

@@ -24,6 +24,7 @@ namespace HexToPcap.Tests
                 new KeyValuePair<string, Action>("SplitsIpv6FramesWithoutBlankLines", SplitsIpv6FramesWithoutBlankLines),
                 new KeyValuePair<string, Action>("SplitsArpFramesWithoutBlankLines", SplitsArpFramesWithoutBlankLines),
                 new KeyValuePair<string, Action>("SplitsVlanFramesWithoutBlankLines", SplitsVlanFramesWithoutBlankLines),
+                new KeyValuePair<string, Action>("SplitsStackedVlanFramesWithoutBlankLines", SplitsStackedVlanFramesWithoutBlankLines),
                 new KeyValuePair<string, Action>("ParsesSingleTcpdumpPacket", ParsesSingleTcpdumpPacket),
                 new KeyValuePair<string, Action>("ParsesMultipleTcpdumpPacketsWithOffsetReset", ParsesMultipleTcpdumpPacketsWithOffsetReset),
                 new KeyValuePair<string, Action>("RejectsInvalidCharactersAndOddHex", RejectsInvalidCharactersAndOddHex),
@@ -134,6 +135,18 @@ namespace HexToPcap.Tests
             var result = parser.Parse(ToPlainHexLines(Concat(frame1, frame2), 16));
 
             AssertCounts(result, 2, 0);
+        }
+
+        private static void SplitsStackedVlanFramesWithoutBlankLines()
+        {
+            var parser = new HexInputParser();
+            var frame1 = BuildStackedVlanIpv4Frame(0x33, new byte[] { 0x10, 0x11, 0x12, 0x13 }, 0x88A8, 0x8100);
+            var frame2 = BuildStackedVlanIpv6Frame(0x34, new byte[] { 0x20, 0x21, 0x22, 0x23, 0x24 }, 0x9100, 0x88A8, 0x8100);
+            var result = parser.Parse(ToPlainHexLines(Concat(frame1, frame2), 20));
+
+            AssertCounts(result, 2, 0);
+            AssertSequenceEqual(frame1, result.SuccessfulPackets[0], "澶氬眰 VLAN IPv4 鎶ユ枃鎷嗗垎閿欒銆?");
+            AssertSequenceEqual(frame2, result.SuccessfulPackets[1], "澶氬眰 VLAN IPv6 鎶ユ枃鎷嗗垎閿欒銆?");
         }
 
         private static void ParsesSingleTcpdumpPacket()
@@ -325,18 +338,22 @@ namespace HexToPcap.Tests
 
         private static byte[] BuildVlanIpv4Frame(byte marker, byte[] payload)
         {
-            var ethernet = BuildEthernetHeader(marker, 0x8100);
-            var vlan = new byte[] { 0x00, 0x01, 0x08, 0x00 };
-            var ip = BuildIpv4Frame(marker, payload).Skip(14).ToArray();
-            return Concat(ethernet, vlan, ip);
+            return WrapWithVlanTags(BuildIpv4Frame(marker, payload), 0x8100);
         }
 
         private static byte[] BuildVlanIpv6Frame(byte marker, byte[] payload)
         {
-            var ethernet = BuildEthernetHeader(marker, 0x8100);
-            var vlan = new byte[] { 0x00, 0x01, 0x86, 0xDD };
-            var ip = BuildIpv6Frame(marker, payload).Skip(14).ToArray();
-            return Concat(ethernet, vlan, ip);
+            return WrapWithVlanTags(BuildIpv6Frame(marker, payload), 0x8100);
+        }
+
+        private static byte[] BuildStackedVlanIpv4Frame(byte marker, byte[] payload, params ushort[] vlanEtherTypes)
+        {
+            return WrapWithVlanTags(BuildIpv4Frame(marker, payload), vlanEtherTypes);
+        }
+
+        private static byte[] BuildStackedVlanIpv6Frame(byte marker, byte[] payload, params ushort[] vlanEtherTypes)
+        {
+            return WrapWithVlanTags(BuildIpv6Frame(marker, payload), vlanEtherTypes);
         }
 
         private static byte[] BuildUnknownEtherTypeFrame(byte marker, byte[] payload)
@@ -352,6 +369,36 @@ namespace HexToPcap.Tests
                 0x66, 0x77, 0x88, 0x99, 0xAA, (byte)(marker + 1),
                 (byte)(etherType >> 8), (byte)(etherType & 0xFF)
             };
+        }
+
+        private static byte[] WrapWithVlanTags(byte[] frame, params ushort[] vlanEtherTypes)
+        {
+            if (vlanEtherTypes == null || vlanEtherTypes.Length == 0)
+            {
+                return frame;
+            }
+
+            var originalEtherType = (ushort)((frame[12] << 8) | frame[13]);
+            var ethernet = new byte[14];
+            Buffer.BlockCopy(frame, 0, ethernet, 0, 12);
+            ethernet[12] = (byte)(vlanEtherTypes[0] >> 8);
+            ethernet[13] = (byte)(vlanEtherTypes[0] & 0xFF);
+
+            var tags = new byte[vlanEtherTypes.Length * 4];
+            for (var index = 0; index < vlanEtherTypes.Length; index++)
+            {
+                var tagOffset = index * 4;
+                var nextEtherType = index == vlanEtherTypes.Length - 1
+                    ? originalEtherType
+                    : vlanEtherTypes[index + 1];
+
+                tags[tagOffset] = 0x00;
+                tags[tagOffset + 1] = (byte)(index + 1);
+                tags[tagOffset + 2] = (byte)(nextEtherType >> 8);
+                tags[tagOffset + 3] = (byte)(nextEtherType & 0xFF);
+            }
+
+            return Concat(ethernet, tags, frame.Skip(14).ToArray());
         }
 
         private static byte[] Concat(params byte[][] arrays)

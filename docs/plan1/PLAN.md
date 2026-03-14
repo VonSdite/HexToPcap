@@ -48,7 +48,7 @@
   - 空行显式分隔多个报文
   - 若无空行，则启用用户确认过的“按 Ethernet/IP 长度启发式分包”
 - 启发式分包规则固定为：
-  - 先按以太网头解析，支持普通 Ethernet 和单层 VLAN 封装
+  - 先按以太网头解析，支持普通 Ethernet 和多层 VLAN / QinQ 封装
   - 仅对可推断总长度的帧做自动切分：`IPv4`、`IPv6`、`ARP`
   - IPv4 依据 `Total Length`，IPv6 依据 `Payload Length + 40`，ARP 按固定长度
   - 若 EtherType 无法推断总长度，且没有空行/offset 边界，则该段记为失败，不做猜测性切分

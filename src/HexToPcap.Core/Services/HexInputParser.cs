@@ -450,16 +450,16 @@ namespace HexToPcap.Core.Services
             etherType = (ushort)((data[offset + 12] << 8) | data[offset + 13]);
             l3Offset = offset + 14;
 
-            if (IsVlanEtherType(etherType))
+            while (IsVlanEtherType(etherType))
             {
-                if (data.Length - offset < 18)
+                if (data.Length - l3Offset < 4)
                 {
                     reason = "VLAN 报文头部不完整。";
                     return false;
                 }
 
-                etherType = (ushort)((data[offset + 16] << 8) | data[offset + 17]);
-                l3Offset = offset + 18;
+                etherType = (ushort)((data[l3Offset + 2] << 8) | data[l3Offset + 3]);
+                l3Offset += 4;
             }
 
             reason = null;
