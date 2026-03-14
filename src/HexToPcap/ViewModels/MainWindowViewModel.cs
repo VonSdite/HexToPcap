@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.IO;
 using HexToPcap.Core.Interfaces;
 using HexToPcap.Core.Models;
 using HexToPcap.Models;
@@ -30,7 +31,7 @@ namespace HexToPcap.ViewModels
             _wiresharkLocator = wiresharkLocator;
             Errors = new ObservableCollection<PacketParseError>();
             ReloadSettings();
-            SummaryText = "请在上方输入框粘贴十六进制文本，然后执行转换。";
+            SummaryText = "就绪";
         }
 
         public ObservableCollection<PacketParseError> Errors { get; private set; }
@@ -117,9 +118,10 @@ namespace HexToPcap.ViewModels
 
             if (parseResult.SuccessfulPackets.Count == 0)
             {
-                SummaryText = string.Format(
-                    "未生成 pcap 文件。成功 0 个，失败 {0} 个。",
-                    parseResult.Errors.Count);
+                SummaryText = parseResult.Errors.Count == 0
+                    ? "未识别到报文"
+                    : string.Format("失败 {0}", parseResult.Errors.Count);
+
                 return new ConversionOutcome
                 {
                     FailedPacketCount = parseResult.Errors.Count
@@ -129,11 +131,10 @@ namespace HexToPcap.ViewModels
             var outputPath = _pcapWriter.Write(settings.OutputDirectory, parseResult.SuccessfulPackets);
             LastOutputPath = outputPath;
 
-            SummaryText = string.Format(
-                "已生成 {0} 个报文到 {1}。失败 {2} 个。",
+            SummaryText = BuildSummaryText(
                 parseResult.SuccessfulPackets.Count,
-                outputPath,
-                parseResult.Errors.Count);
+                parseResult.Errors.Count,
+                Path.GetFileName(outputPath));
 
             return new ConversionOutcome
             {
@@ -147,6 +148,16 @@ namespace HexToPcap.ViewModels
         public void OpenInWireshark(string wiresharkPath, string capturePath)
         {
             _wiresharkLocator.OpenCapture(wiresharkPath, capturePath);
+        }
+
+        private static string BuildSummaryText(int successCount, int errorCount, string fileName)
+        {
+            if (errorCount == 0)
+            {
+                return string.Format("成功 {0} | {1}", successCount, fileName);
+            }
+
+            return string.Format("成功 {0}，失败 {1} | {2}", successCount, errorCount, fileName);
         }
     }
 }

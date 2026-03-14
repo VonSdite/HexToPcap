@@ -14,6 +14,7 @@
     <Deterministic>true</Deterministic>
     <LangVersion>5</LangVersion>
     <BaseIntermediateOutputPath>..\..\build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <ApplicationIcon>Assets\HexToPcap.ico</ApplicationIcon>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <DebugSymbols>true</DebugSymbols>
@@ -62,6 +63,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Resource Include="Assets\HexToPcap.ico" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
