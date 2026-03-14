@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Windows;
 using HexToPcap.Core.Interfaces;
 using HexToPcap.Models;
 using HexToPcap.Services;
@@ -16,6 +17,7 @@ namespace HexToPcap.ViewModels
         private string _outputDirectory;
         private string _summaryText;
         private string _lastOutputPath;
+        private bool _hasLoadedSettings;
 
         public MainWindowViewModel(
             IInputParser inputParser,
@@ -27,7 +29,7 @@ namespace HexToPcap.ViewModels
             _pcapWriter = pcapWriter;
             _settingsService = settingsService;
             _wiresharkLocator = wiresharkLocator;
-            ReloadSettings();
+            OutputDirectory = BuildDefaultOutputDirectory();
             SummaryText = "\u5C31\u7EEA";
         }
 
@@ -95,6 +97,18 @@ namespace HexToPcap.ViewModels
         {
             var settings = _settingsService.Load();
             OutputDirectory = settings.OutputDirectory;
+            _hasLoadedSettings = true;
+        }
+
+        public void InitializeAfterStartup()
+        {
+            if (_hasLoadedSettings)
+            {
+                return;
+            }
+
+            // Delay settings I/O until after first frame to improve perceived startup speed.
+            Application.Current.Dispatcher.BeginInvoke(new Action(ReloadSettings));
         }
 
         public ConversionOutcome Convert()
@@ -139,6 +153,13 @@ namespace HexToPcap.ViewModels
         private static string BuildSummaryText(int successCount, string fileName)
         {
             return string.Format("\u6210\u529F\u5BFC\u51FA {0} \u4E2A | {1}", successCount, fileName);
+        }
+
+        private static string BuildDefaultOutputDirectory()
+        {
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "HexToPcap");
         }
     }
 }

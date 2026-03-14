@@ -21,6 +21,7 @@ namespace HexToPcap
             var window = new MainWindow(viewModel, settingsService);
             MainWindow = window;
             window.Show();
+            viewModel.InitializeAfterStartup();
         }
 
         private void OnDispatcherUnhandledException(object sender, DispatcherUnhandledExceptionEventArgs e)
