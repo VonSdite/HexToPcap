@@ -23,6 +23,8 @@ namespace HexToPcap.Tests
                 new KeyValuePair<string, Action>("ParsesBlankSeparatedFrames", ParsesBlankSeparatedFrames),
                 new KeyValuePair<string, Action>("SplitsPacketsWhenRecognizedEthernetHeaderStartsNewLine", SplitsPacketsWhenRecognizedEthernetHeaderStartsNewLine),
                 new KeyValuePair<string, Action>("IgnoresOffsetPrefixesInPlainInput", IgnoresOffsetPrefixesInPlainInput),
+                new KeyValuePair<string, Action>("KeepsMixedPrefixedAndPlainLinesInSamePacket", KeepsMixedPrefixedAndPlainLinesInSamePacket),
+                new KeyValuePair<string, Action>("IgnoresAnyLeadingTokenEndingWithColon", IgnoresAnyLeadingTokenEndingWithColon),
                 new KeyValuePair<string, Action>("PadsOddHexTokensInsteadOfFailing", PadsOddHexTokensInsteadOfFailing),
                 new KeyValuePair<string, Action>("OutputsIncompletePacketsWithoutErrors", OutputsIncompletePacketsWithoutErrors),
                 new KeyValuePair<string, Action>("ParsesSingleTcpdumpPacket", ParsesSingleTcpdumpPacket),
@@ -126,6 +128,29 @@ namespace HexToPcap.Tests
 
             AssertCounts(result, 1);
             AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Offset prefix should not become packet bytes.");
+        }
+
+        private static void KeepsMixedPrefixedAndPlainLinesInSamePacket()
+        {
+            var parser = new HexInputParser();
+            var expected = new byte[] { 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77 };
+            var input =
+                "0x0000: 00 11 22 33" + Environment.NewLine +
+                "44 55 66 77";
+            var result = parser.Parse(input);
+
+            AssertCounts(result, 1);
+            AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Plain lines after an address-prefixed line should stay in the same packet.");
+        }
+
+        private static void IgnoresAnyLeadingTokenEndingWithColon()
+        {
+            var parser = new HexInputParser();
+            var expected = new byte[] { 0xAA, 0xBB, 0xCC, 0xDD };
+            var result = parser.Parse("gdb_print: AA BB CC DD");
+
+            AssertCounts(result, 1);
+            AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Any leading token ending with a colon should be ignored.");
         }
 
         private static void PadsOddHexTokensInsteadOfFailing()

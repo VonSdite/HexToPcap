@@ -9,12 +9,8 @@ namespace HexToPcap.Core.Services
 {
     public sealed class HexInputParser : IInputParser
     {
-        private static readonly Regex TcpdumpOffsetRegex = new Regex(
-            @"^\s*0[xX](?<offset>[0-9A-Fa-f]+):\s*(?<rest>.*)$",
-            RegexOptions.Compiled);
-
-        private static readonly Regex LineOffsetPrefixRegex = new Regex(
-            @"^\s*0[xX][0-9A-Fa-f]+:\s*",
+        private static readonly Regex LeadingTokenWithColonRegex = new Regex(
+            @"^\s*(?<token>\S+:)\s*(?<rest>.*)$",
             RegexOptions.Compiled);
 
         public ParseResult Parse(string input)
@@ -29,15 +25,7 @@ namespace HexToPcap.Core.Services
             var blocks = SplitIntoBlocks(input);
             for (var index = 0; index < blocks.Count; index++)
             {
-                var block = blocks[index];
-                if (ContainsTcpdumpOffsets(block))
-                {
-                    ParseTcpdumpBlock(block, packets);
-                }
-                else
-                {
-                    ParsePlainBlock(block, packets);
-                }
+                ParseBlock(blocks[index], packets);
             }
 
             return new ParseResult(packets);
@@ -71,27 +59,14 @@ namespace HexToPcap.Core.Services
             return blocks;
         }
 
-        private static bool ContainsTcpdumpOffsets(TextBlock block)
-        {
-            for (var index = 0; index < block.Lines.Count; index++)
-            {
-                if (TcpdumpOffsetRegex.IsMatch(block.Lines[index]))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static void ParsePlainBlock(TextBlock block, ICollection<byte[]> packets)
+        private static void ParseBlock(TextBlock block, ICollection<byte[]> packets)
         {
             List<byte> currentPacket = null;
 
             for (var index = 0; index < block.Lines.Count; index++)
             {
-                var lineBytes = ExtractPlainLineBytes(block.Lines[index]);
-                if (lineBytes.Length == 0)
+                var parsedLine = ParseLine(block.Lines[index]);
+                if (parsedLine.Bytes.Length == 0)
                 {
                     continue;
                 }
@@ -100,13 +75,13 @@ namespace HexToPcap.Core.Services
                 {
                     currentPacket = new List<byte>();
                 }
-                else if (StartsWithRecognizedEthernetHeader(lineBytes))
+                else if (StartsWithRecognizedEthernetHeader(parsedLine.Bytes))
                 {
                     packets.Add(currentPacket.ToArray());
                     currentPacket = new List<byte>();
                 }
 
-                currentPacket.AddRange(lineBytes);
+                currentPacket.AddRange(parsedLine.Bytes);
             }
 
             if (currentPacket != null && currentPacket.Count > 0)
@@ -115,83 +90,35 @@ namespace HexToPcap.Core.Services
             }
         }
 
-        private static void ParseTcpdumpBlock(TextBlock block, ICollection<byte[]> packets)
-        {
-            List<byte> currentPacket = null;
-
-            for (var index = 0; index < block.Lines.Count; index++)
-            {
-                var line = block.Lines[index];
-                var match = TcpdumpOffsetRegex.Match(line);
-                if (!match.Success)
-                {
-                    continue;
-                }
-
-                int offset;
-                if (!int.TryParse(match.Groups["offset"].Value, NumberStyles.HexNumber, CultureInfo.InvariantCulture, out offset))
-                {
-                    offset = 0;
-                }
-
-                var lineBytes = ExtractTcpdumpLineBytes(match.Groups["rest"].Value);
-                if (lineBytes.Length == 0)
-                {
-                    continue;
-                }
-
-                if (currentPacket != null && currentPacket.Count > 0 && offset == 0)
-                {
-                    packets.Add(currentPacket.ToArray());
-                    currentPacket = new List<byte>();
-                }
-                else if (currentPacket == null)
-                {
-                    currentPacket = new List<byte>();
-                }
-
-                currentPacket.AddRange(lineBytes);
-            }
-
-            if (currentPacket != null && currentPacket.Count > 0)
-            {
-                packets.Add(currentPacket.ToArray());
-            }
-        }
-
-        private static byte[] ExtractPlainLineBytes(string line)
+        private static ParsedLine ParseLine(string line)
         {
             if (string.IsNullOrWhiteSpace(line))
             {
-                return new byte[0];
+                return new ParsedLine(new byte[0]);
             }
 
-            var normalizedLine = LineOffsetPrefixRegex.Replace(line, string.Empty);
-            var tokens = normalizedLine.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            return ExtractBytesFromTokens(tokens, false);
+            var remaining = StripLeadingTokenWithColon(line);
+            var tokens = remaining.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            return new ParsedLine(ExtractBytesFromTokens(tokens));
         }
 
-        private static byte[] ExtractTcpdumpLineBytes(string line)
+        private static string StripLeadingTokenWithColon(string line)
         {
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                return new byte[0];
-            }
-
-            var tokens = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-            return ExtractBytesFromTokens(tokens, true);
+            var match = LeadingTokenWithColonRegex.Match(line);
+            return match.Success ? match.Groups["rest"].Value : line;
         }
 
-        private static byte[] ExtractBytesFromTokens(string[] tokens, bool stopOnInvalidToken)
+        private static byte[] ExtractBytesFromTokens(string[] tokens)
         {
             var bytes = new List<byte>();
+            var hasParsedHex = false;
 
             for (var index = 0; index < tokens.Length; index++)
             {
                 var normalizedToken = NormalizeHexToken(tokens[index]);
                 if (normalizedToken == null)
                 {
-                    if (stopOnInvalidToken)
+                    if (hasParsedHex)
                     {
                         break;
                     }
@@ -199,6 +126,7 @@ namespace HexToPcap.Core.Services
                     continue;
                 }
 
+                hasParsedHex = true;
                 AppendHexBytes(normalizedToken, bytes);
             }
 
@@ -288,6 +216,16 @@ namespace HexToPcap.Core.Services
             }
 
             public List<string> Lines { get; private set; }
+        }
+
+        private sealed class ParsedLine
+        {
+            public ParsedLine(byte[] bytes)
+            {
+                Bytes = bytes ?? new byte[0];
+            }
+
+            public byte[] Bytes { get; private set; }
         }
     }
 }
