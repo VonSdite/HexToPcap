@@ -20,16 +20,14 @@ namespace HexToPcap.Tests
                 new KeyValuePair<string, Action>("ParsesSingleIpv4Frame", ParsesSingleIpv4Frame),
                 new KeyValuePair<string, Action>("ParsesMultiLineIpv4Frame", ParsesMultiLineIpv4Frame),
                 new KeyValuePair<string, Action>("ParsesBlankSeparatedFrames", ParsesBlankSeparatedFrames),
-                new KeyValuePair<string, Action>("SplitsConcatenatedIpv4FramesWithoutBlankLines", SplitsConcatenatedIpv4FramesWithoutBlankLines),
-                new KeyValuePair<string, Action>("SplitsIpv6FramesWithoutBlankLines", SplitsIpv6FramesWithoutBlankLines),
-                new KeyValuePair<string, Action>("SplitsArpFramesWithoutBlankLines", SplitsArpFramesWithoutBlankLines),
-                new KeyValuePair<string, Action>("SplitsVlanFramesWithoutBlankLines", SplitsVlanFramesWithoutBlankLines),
-                new KeyValuePair<string, Action>("SplitsStackedVlanFramesWithoutBlankLines", SplitsStackedVlanFramesWithoutBlankLines),
+                new KeyValuePair<string, Action>("SplitsPacketsWhenRecognizedEthernetHeaderStartsNewLine", SplitsPacketsWhenRecognizedEthernetHeaderStartsNewLine),
+                new KeyValuePair<string, Action>("IgnoresOffsetPrefixesInPlainInput", IgnoresOffsetPrefixesInPlainInput),
+                new KeyValuePair<string, Action>("PadsOddHexTokensInsteadOfFailing", PadsOddHexTokensInsteadOfFailing),
+                new KeyValuePair<string, Action>("OutputsIncompletePacketsWithoutErrors", OutputsIncompletePacketsWithoutErrors),
                 new KeyValuePair<string, Action>("ParsesSingleTcpdumpPacket", ParsesSingleTcpdumpPacket),
                 new KeyValuePair<string, Action>("ParsesMultipleTcpdumpPacketsWithOffsetReset", ParsesMultipleTcpdumpPacketsWithOffsetReset),
-                new KeyValuePair<string, Action>("RejectsInvalidCharactersAndOddHex", RejectsInvalidCharactersAndOddHex),
-                new KeyValuePair<string, Action>("RejectsUnknownEtherTypeConcatenation", RejectsUnknownEtherTypeConcatenation),
-                new KeyValuePair<string, Action>("CapturesResidualBytesAsError", CapturesResidualBytesAsError),
+                new KeyValuePair<string, Action>("IgnoresTcpdumpAsciiAndOffsetPrefixBytes", IgnoresTcpdumpAsciiAndOffsetPrefixBytes),
+                new KeyValuePair<string, Action>("KeepsTcpdumpPacketsWhenOffsetsJump", KeepsTcpdumpPacketsWhenOffsetsJump),
                 new KeyValuePair<string, Action>("WritesClassicPcapHeader", WritesClassicPcapHeader)
             };
 
@@ -71,7 +69,7 @@ namespace HexToPcap.Tests
             var result = parser.Parse(ToPlainHexLines(frame, frame.Length));
 
             AssertCounts(result, 1, 0);
-            AssertSequenceEqual(frame, result.SuccessfulPackets[0], "单个 IPv4 报文解析结果不一致。");
+            AssertSequenceEqual(frame, result.SuccessfulPackets[0], "Single IPv4 frame bytes do not match.");
         }
 
         private static void ParsesMultiLineIpv4Frame()
@@ -81,7 +79,7 @@ namespace HexToPcap.Tests
             var result = parser.Parse(ToPlainHexLines(frame, 8));
 
             AssertCounts(result, 1, 0);
-            AssertSequenceEqual(frame, result.SuccessfulPackets[0], "跨多行 IPv4 报文解析结果不一致。");
+            AssertSequenceEqual(frame, result.SuccessfulPackets[0], "Multi-line IPv4 frame bytes do not match.");
         }
 
         private static void ParsesBlankSeparatedFrames()
@@ -93,60 +91,51 @@ namespace HexToPcap.Tests
             var result = parser.Parse(input);
 
             AssertCounts(result, 2, 0);
+            AssertSequenceEqual(frame1, result.SuccessfulPackets[0], "First blank-separated frame bytes do not match.");
+            AssertSequenceEqual(frame2, result.SuccessfulPackets[1], "Second blank-separated frame bytes do not match.");
         }
 
-        private static void SplitsConcatenatedIpv4FramesWithoutBlankLines()
+        private static void SplitsPacketsWhenRecognizedEthernetHeaderStartsNewLine()
         {
             var parser = new HexInputParser();
-            var frame1 = BuildIpv4Frame(0x05, new byte[] { 0x10, 0x11, 0x12, 0x13 });
-            var frame2 = BuildIpv4Frame(0x06, new byte[] { 0x20, 0x21, 0x22, 0x23, 0x24, 0x25 });
-            var result = parser.Parse(ToPlainHexLines(Concat(frame1, frame2), 16));
+            var fragment = new byte[] { 0xAA, 0xBB, 0xCC };
+            var frame = BuildIpv4Frame(0x05, new byte[] { 0x10, 0x11, 0x12, 0x13 });
+            var input = ToPlainHexLines(fragment, fragment.Length) + Environment.NewLine + ToPlainHexLines(frame, frame.Length);
+            var result = parser.Parse(input);
 
             AssertCounts(result, 2, 0);
-            AssertSequenceEqual(frame1, result.SuccessfulPackets[0], "第一个 IPv4 报文拆分错误。");
-            AssertSequenceEqual(frame2, result.SuccessfulPackets[1], "第二个 IPv4 报文拆分错误。");
+            AssertSequenceEqual(fragment, result.SuccessfulPackets[0], "Leading fragment should be exported as the first packet.");
+            AssertSequenceEqual(frame, result.SuccessfulPackets[1], "Recognized Ethernet frame should start a new packet.");
         }
 
-        private static void SplitsIpv6FramesWithoutBlankLines()
+        private static void IgnoresOffsetPrefixesInPlainInput()
         {
             var parser = new HexInputParser();
-            var frame1 = BuildIpv6Frame(0x11, new byte[] { 0xAA, 0xBB, 0xCC, 0xDD });
-            var frame2 = BuildIpv6Frame(0x12, new byte[] { 0xEE, 0xFF, 0x01, 0x02, 0x03, 0x04 });
-            var result = parser.Parse(ToPlainHexLines(Concat(frame1, frame2), 24));
+            var expected = new byte[] { 0x00, 0x11, 0x22, 0x33 };
+            var result = parser.Parse("0x0000: 00 11 22 33");
 
-            AssertCounts(result, 2, 0);
+            AssertCounts(result, 1, 0);
+            AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Offset prefix should not become packet bytes.");
         }
 
-        private static void SplitsArpFramesWithoutBlankLines()
+        private static void PadsOddHexTokensInsteadOfFailing()
         {
             var parser = new HexInputParser();
-            var frame1 = BuildArpFrame(0x21);
-            var frame2 = BuildArpFrame(0x22);
-            var result = parser.Parse(ToPlainHexLines(Concat(frame1, frame2), 21));
+            var expected = new byte[] { 0xA0, 0xBB, 0x12, 0x30 };
+            var result = parser.Parse("A BB 123");
 
-            AssertCounts(result, 2, 0);
+            AssertCounts(result, 1, 0);
+            AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Odd-length tokens should be padded with trailing zeroes.");
         }
 
-        private static void SplitsVlanFramesWithoutBlankLines()
+        private static void OutputsIncompletePacketsWithoutErrors()
         {
             var parser = new HexInputParser();
-            var frame1 = BuildVlanIpv4Frame(0x31, new byte[] { 0x01, 0x02, 0x03, 0x04 });
-            var frame2 = BuildVlanIpv6Frame(0x32, new byte[] { 0x05, 0x06, 0x07, 0x08 });
-            var result = parser.Parse(ToPlainHexLines(Concat(frame1, frame2), 16));
+            var truncated = BuildIpv4Frame(0x06, new byte[] { 0x20, 0x21, 0x22, 0x23 }).Take(18).ToArray();
+            var result = parser.Parse(ToPlainHexLines(truncated, truncated.Length));
 
-            AssertCounts(result, 2, 0);
-        }
-
-        private static void SplitsStackedVlanFramesWithoutBlankLines()
-        {
-            var parser = new HexInputParser();
-            var frame1 = BuildStackedVlanIpv4Frame(0x33, new byte[] { 0x10, 0x11, 0x12, 0x13 }, 0x88A8, 0x8100);
-            var frame2 = BuildStackedVlanIpv6Frame(0x34, new byte[] { 0x20, 0x21, 0x22, 0x23, 0x24 }, 0x9100, 0x88A8, 0x8100);
-            var result = parser.Parse(ToPlainHexLines(Concat(frame1, frame2), 20));
-
-            AssertCounts(result, 2, 0);
-            AssertSequenceEqual(frame1, result.SuccessfulPackets[0], "澶氬眰 VLAN IPv4 鎶ユ枃鎷嗗垎閿欒銆?");
-            AssertSequenceEqual(frame2, result.SuccessfulPackets[1], "澶氬眰 VLAN IPv6 鎶ユ枃鎷嗗垎閿欒銆?");
+            AssertCounts(result, 1, 0);
+            AssertSequenceEqual(truncated, result.SuccessfulPackets[0], "Incomplete packet should still be exported.");
         }
 
         private static void ParsesSingleTcpdumpPacket()
@@ -156,7 +145,7 @@ namespace HexToPcap.Tests
             var result = parser.Parse(ToTcpdumpHex(frame));
 
             AssertCounts(result, 1, 0);
-            AssertSequenceEqual(frame, result.SuccessfulPackets[0], "tcpdump 单包解析结果不一致。");
+            AssertSequenceEqual(frame, result.SuccessfulPackets[0], "Tcpdump packet bytes do not match.");
         }
 
         private static void ParsesMultipleTcpdumpPacketsWithOffsetReset()
@@ -168,38 +157,34 @@ namespace HexToPcap.Tests
             var result = parser.Parse(input);
 
             AssertCounts(result, 2, 0);
+            AssertSequenceEqual(frame1, result.SuccessfulPackets[0], "First tcpdump packet bytes do not match.");
+            AssertSequenceEqual(frame2, result.SuccessfulPackets[1], "Second tcpdump packet bytes do not match.");
         }
 
-        private static void RejectsInvalidCharactersAndOddHex()
+        private static void IgnoresTcpdumpAsciiAndOffsetPrefixBytes()
         {
             var parser = new HexInputParser();
+            var expected = new byte[] { 0x00, 0x11, 0x22, 0x33 };
+            var input =
+                "12:00:00.000000 IP sample > sample: payload" + Environment.NewLine +
+                "        0x0000:  0011 2233  ..\"3";
+            var result = parser.Parse(input);
 
-            var invalidChar = parser.Parse("00 11 22 ZZ");
-            AssertCounts(invalidChar, 0, 1);
-
-            var oddHex = parser.Parse("00 11 223");
-            AssertCounts(oddHex, 0, 1);
+            AssertCounts(result, 1, 0);
+            AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Tcpdump ASCII preview should be ignored.");
         }
 
-        private static void RejectsUnknownEtherTypeConcatenation()
+        private static void KeepsTcpdumpPacketsWhenOffsetsJump()
         {
             var parser = new HexInputParser();
-            var frame1 = BuildUnknownEtherTypeFrame(0x51, new byte[] { 0x01, 0x02, 0x03, 0x04 });
-            var frame2 = BuildUnknownEtherTypeFrame(0x52, new byte[] { 0x05, 0x06, 0x07, 0x08 });
-            var result = parser.Parse(ToPlainHexLines(Concat(frame1, frame2), 16));
+            var expected = new byte[] { 0x00, 0x11, 0x22, 0x33 };
+            var input =
+                "12:00:00.000000 IP sample > sample: payload" + Environment.NewLine +
+                "        0x0010:  0011 2233  ..\"3";
+            var result = parser.Parse(input);
 
-            AssertCounts(result, 0, 1);
-        }
-
-        private static void CapturesResidualBytesAsError()
-        {
-            var parser = new HexInputParser();
-            var frame1 = BuildIpv4Frame(0x61, new byte[] { 0x90, 0x91, 0x92, 0x93 });
-            var frame2 = BuildIpv4Frame(0x62, new byte[] { 0xA0, 0xA1, 0xA2, 0xA3 });
-            var truncated = frame2.Take(10).ToArray();
-            var result = parser.Parse(ToPlainHexLines(Concat(frame1, truncated), 20));
-
-            AssertCounts(result, 1, 1);
+            AssertCounts(result, 1, 0);
+            AssertSequenceEqual(expected, result.SuccessfulPackets[0], "Tcpdump offsets should not be validated before export.");
         }
 
         private static void WritesClassicPcapHeader()
@@ -215,20 +200,20 @@ namespace HexToPcap.Tests
                 var fileName = Path.GetFileName(outputPath);
                 if (!Regex.IsMatch(fileName, @"^\d{14}-1\.pcap$"))
                 {
-                    throw new InvalidOperationException("输出文件名不符合 yyyyMMddHHmmss-个数.pcap 格式。");
+                    throw new InvalidOperationException("Output file name does not match yyyyMMddHHmmss-count.pcap.");
                 }
 
                 var bytes = File.ReadAllBytes(outputPath);
                 if (bytes.Length <= 24)
                 {
-                    throw new InvalidOperationException("pcap 文件长度异常。");
+                    throw new InvalidOperationException("Pcap file is unexpectedly short.");
                 }
 
-                AssertEqual(0xD4, bytes[0], "pcap magic number 字节 0 错误。");
-                AssertEqual(0xC3, bytes[1], "pcap magic number 字节 1 错误。");
-                AssertEqual(0xB2, bytes[2], "pcap magic number 字节 2 错误。");
-                AssertEqual(0xA1, bytes[3], "pcap magic number 字节 3 错误。");
-                AssertEqual(1u, BitConverter.ToUInt32(bytes, 20), "pcap network 字段不是 Ethernet。");
+                AssertEqual(0xD4, bytes[0], "pcap magic number byte 0 is incorrect.");
+                AssertEqual(0xC3, bytes[1], "pcap magic number byte 1 is incorrect.");
+                AssertEqual(0xB2, bytes[2], "pcap magic number byte 2 is incorrect.");
+                AssertEqual(0xA1, bytes[3], "pcap magic number byte 3 is incorrect.");
+                AssertEqual(1u, BitConverter.ToUInt32(bytes, 20), "pcap network field should be Ethernet.");
             }
             finally
             {
@@ -241,22 +226,22 @@ namespace HexToPcap.Tests
 
         private static void AssertCounts(ParseResult result, int successCount, int errorCount)
         {
-            AssertEqual(successCount, result.SuccessfulPackets.Count, "成功报文数量不符合预期。");
-            AssertEqual(errorCount, result.Errors.Count, "失败报文数量不符合预期。");
+            AssertEqual(successCount, result.SuccessfulPackets.Count, "Unexpected successful packet count.");
+            AssertEqual(errorCount, result.Errors.Count, "Unexpected parse error count.");
         }
 
         private static void AssertSequenceEqual(byte[] expected, byte[] actual, string message)
         {
             if (expected.Length != actual.Length)
             {
-                throw new InvalidOperationException(message + " 长度不一致。");
+                throw new InvalidOperationException(message + " Length mismatch.");
             }
 
             for (var index = 0; index < expected.Length; index++)
             {
                 if (expected[index] != actual[index])
                 {
-                    throw new InvalidOperationException(message + " 索引 " + index.ToString(CultureInfo.InvariantCulture) + " 不一致。");
+                    throw new InvalidOperationException(message + " Byte mismatch at index " + index.ToString(CultureInfo.InvariantCulture) + ".");
                 }
             }
         }
@@ -265,7 +250,7 @@ namespace HexToPcap.Tests
         {
             if (!Equals(expected, actual))
             {
-                throw new InvalidOperationException(message + " 期望=" + expected + " 实际=" + actual);
+                throw new InvalidOperationException(message + " Expected=" + expected + " Actual=" + actual);
             }
         }
 
@@ -318,49 +303,6 @@ namespace HexToPcap.Tests
             return Concat(ethernet, ip, payload);
         }
 
-        private static byte[] BuildArpFrame(byte marker)
-        {
-            var ethernet = BuildEthernetHeader(marker, 0x0806);
-            var arp = new byte[]
-            {
-                0x00, 0x01,
-                0x08, 0x00,
-                0x06,
-                0x04,
-                0x00, 0x01,
-                0x00, 0x11, 0x22, 0x33, 0x44, marker,
-                192, 168, 1, marker,
-                0x66, 0x77, 0x88, 0x99, 0xAA, (byte)(marker + 1),
-                192, 168, 1, (byte)(marker + 1)
-            };
-            return Concat(ethernet, arp);
-        }
-
-        private static byte[] BuildVlanIpv4Frame(byte marker, byte[] payload)
-        {
-            return WrapWithVlanTags(BuildIpv4Frame(marker, payload), 0x8100);
-        }
-
-        private static byte[] BuildVlanIpv6Frame(byte marker, byte[] payload)
-        {
-            return WrapWithVlanTags(BuildIpv6Frame(marker, payload), 0x8100);
-        }
-
-        private static byte[] BuildStackedVlanIpv4Frame(byte marker, byte[] payload, params ushort[] vlanEtherTypes)
-        {
-            return WrapWithVlanTags(BuildIpv4Frame(marker, payload), vlanEtherTypes);
-        }
-
-        private static byte[] BuildStackedVlanIpv6Frame(byte marker, byte[] payload, params ushort[] vlanEtherTypes)
-        {
-            return WrapWithVlanTags(BuildIpv6Frame(marker, payload), vlanEtherTypes);
-        }
-
-        private static byte[] BuildUnknownEtherTypeFrame(byte marker, byte[] payload)
-        {
-            return Concat(BuildEthernetHeader(marker, 0x88B5), payload);
-        }
-
         private static byte[] BuildEthernetHeader(byte marker, ushort etherType)
         {
             return new byte[]
@@ -369,36 +311,6 @@ namespace HexToPcap.Tests
                 0x66, 0x77, 0x88, 0x99, 0xAA, (byte)(marker + 1),
                 (byte)(etherType >> 8), (byte)(etherType & 0xFF)
             };
-        }
-
-        private static byte[] WrapWithVlanTags(byte[] frame, params ushort[] vlanEtherTypes)
-        {
-            if (vlanEtherTypes == null || vlanEtherTypes.Length == 0)
-            {
-                return frame;
-            }
-
-            var originalEtherType = (ushort)((frame[12] << 8) | frame[13]);
-            var ethernet = new byte[14];
-            Buffer.BlockCopy(frame, 0, ethernet, 0, 12);
-            ethernet[12] = (byte)(vlanEtherTypes[0] >> 8);
-            ethernet[13] = (byte)(vlanEtherTypes[0] & 0xFF);
-
-            var tags = new byte[vlanEtherTypes.Length * 4];
-            for (var index = 0; index < vlanEtherTypes.Length; index++)
-            {
-                var tagOffset = index * 4;
-                var nextEtherType = index == vlanEtherTypes.Length - 1
-                    ? originalEtherType
-                    : vlanEtherTypes[index + 1];
-
-                tags[tagOffset] = 0x00;
-                tags[tagOffset + 1] = (byte)(index + 1);
-                tags[tagOffset + 2] = (byte)(nextEtherType >> 8);
-                tags[tagOffset + 3] = (byte)(nextEtherType & 0xFF);
-            }
-
-            return Concat(ethernet, tags, frame.Skip(14).ToArray());
         }
 
         private static byte[] Concat(params byte[][] arrays)

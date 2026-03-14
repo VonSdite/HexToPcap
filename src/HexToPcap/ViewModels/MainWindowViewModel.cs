@@ -31,7 +31,7 @@ namespace HexToPcap.ViewModels
             _wiresharkLocator = wiresharkLocator;
             Errors = new ObservableCollection<PacketParseError>();
             ReloadSettings();
-            SummaryText = "就绪";
+            SummaryText = "\u5C31\u7EEA";
         }
 
         public ObservableCollection<PacketParseError> Errors { get; private set; }
@@ -111,20 +111,14 @@ namespace HexToPcap.ViewModels
             OutputDirectory = settings.OutputDirectory;
 
             var parseResult = _inputParser.Parse(InputText ?? string.Empty);
-            for (var index = 0; index < parseResult.Errors.Count; index++)
-            {
-                Errors.Add(parseResult.Errors[index]);
-            }
 
             if (parseResult.SuccessfulPackets.Count == 0)
             {
-                SummaryText = parseResult.Errors.Count == 0
-                    ? "未识别到报文"
-                    : string.Format("失败 {0}", parseResult.Errors.Count);
+                SummaryText = "\u672A\u8BC6\u522B\u5230\u62A5\u6587";
 
                 return new ConversionOutcome
                 {
-                    FailedPacketCount = parseResult.Errors.Count
+                    FailedPacketCount = 0
                 };
             }
 
@@ -133,7 +127,6 @@ namespace HexToPcap.ViewModels
 
             SummaryText = BuildSummaryText(
                 parseResult.SuccessfulPackets.Count,
-                parseResult.Errors.Count,
                 Path.GetFileName(outputPath));
 
             return new ConversionOutcome
@@ -141,7 +134,7 @@ namespace HexToPcap.ViewModels
                 OutputPath = outputPath,
                 WiresharkPath = _wiresharkLocator.ResolveLaunchPath(settings.WiresharkPath),
                 SuccessfulPacketCount = parseResult.SuccessfulPackets.Count,
-                FailedPacketCount = parseResult.Errors.Count
+                FailedPacketCount = 0
             };
         }
 
@@ -150,14 +143,9 @@ namespace HexToPcap.ViewModels
             _wiresharkLocator.OpenCapture(wiresharkPath, capturePath);
         }
 
-        private static string BuildSummaryText(int successCount, int errorCount, string fileName)
+        private static string BuildSummaryText(int successCount, string fileName)
         {
-            if (errorCount == 0)
-            {
-                return string.Format("成功 {0} | {1}", successCount, fileName);
-            }
-
-            return string.Format("成功 {0}，失败 {1} | {2}", successCount, errorCount, fileName);
+            return string.Format("\u6210\u529F\u5BFC\u51FA {0} \u4E2A | {1}", successCount, fileName);
         }
     }
 }
