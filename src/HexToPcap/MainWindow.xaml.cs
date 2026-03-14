@@ -1,4 +1,6 @@
 using System;
+using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using HexToPcap.Services;
 using HexToPcap.ViewModels;
@@ -24,13 +26,14 @@ namespace HexToPcap
                 "HexToPcap 用于把十六进制文本转换成标准 pcap 文件。\n\n" +
                 "支持的输入格式：\n" +
                 "1. 普通十六进制文本，支持空格分隔、跨多行粘贴，也支持 0x 前缀。\n" +
-                "2. tcpdump -vv -nn -XX 输出，程序会自动忽略 0x0000: 这类偏移前缀并提取后面的十六进制内容。\n\n" +
+                "2. tcpdump -vv -nn -XX 输出，以及 gdb/地址前缀这类首个 token 带冒号的行。\n\n" +
                 "拆包规则：\n" +
                 "- 空行会作为报文分隔。\n" +
                 "- 没有空行时，只在新的一行起始处识别到常见 Ethernet 头时开始一个新报文。\n" +
+                "- 每一行的首个 token 如果以冒号结尾，会先被忽略。\n" +
                 "- 奇数个十六进制字符会自动在末尾补 0。\n\n" +
                 "其他说明：\n" +
-                "- 保存位置可在主界面顶部直接点击“设置”修改。\n" +
+                "- 保存位置右侧提供“打开目录”和“设置”两个图标按钮。\n" +
                 "- 输出文件名格式：yyyyMMddHHmmss-报文个数.pcap。";
 
             MessageBox.Show(
@@ -50,6 +53,29 @@ namespace HexToPcap
             if (result == true)
             {
                 _viewModel.ReloadSettings();
+            }
+        }
+
+        private void OnOpenOutputDirectoryClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(_viewModel.OutputDirectory))
+                {
+                    return;
+                }
+
+                Directory.CreateDirectory(_viewModel.OutputDirectory);
+                Process.Start("explorer.exe", _viewModel.OutputDirectory);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    this,
+                    ex.Message,
+                    "打开目录失败",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
             }
         }
 
